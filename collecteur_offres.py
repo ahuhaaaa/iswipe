@@ -205,7 +205,10 @@ def main(out="offers.json", prev=None):
                 if lv is None: continue
                 key = (name, re.sub(r"\W+", " ", t.lower()).strip())
                 city = re.split(r"[,\-–(]", o["loc"] or "France")[0].strip() or "France"
-                if key in groups: groups[key]["loc"].append([city, o["url"]]); continue
+                if re.match(r"\d+ locations?", city, re.I): city = "Plusieurs lieux"
+                if key in groups:
+                    if all(l[0] != city for l in groups[key]["loc"]): groups[key]["loc"].append([city, o["url"]])
+                    continue
                 st, stl = start(t, text); d, dl = duration(t, text); g, tt = extras(t, text)
                 groups[key] = dict(id=hashlib.sha1("|".join(key).encode()).hexdigest()[:10], t=k, p=t, c=name, f=family(t), s=struct,
                                    loc=[[city, o["url"]]], st=st, stl=stl, d=d, dl=dl, lv=lv, po=o["posted"], g=g, tt=tt)
