@@ -1,0 +1,29 @@
+ISWIPE — site prêt à publier, offres déjà intégrées, actualisation toutes les 2 h (8 h–20 h)
+
+Le site contient déjà 40 offres (état du 27/10/2026, fichier offers.json) : il s'affiche rempli dès l'ouverture.
+
+Mise en ligne gratuite (GitHub Pages) :
+1. Créez un dépôt GitHub public et déposez-y tout ce dossier (y compris le dossier caché .github).
+2. Settings > Pages : Source « Deploy from a branch », branche main, dossier /root.
+3. Actions > « Mise à jour des offres » > Run workflow, pour tester une première fois.
+   Ensuite le collecteur tourne seul toutes les 2 h de 8 h à 20 h (heure de Paris en hiver),
+   et jamais la nuit. La page se rafraîchit aussi toute seule toutes les 30 minutes quand elle est ouverte.
+4. Adresse du site : https://VOTRE-NOM.github.io/NOM-DU-DEPOT/
+
+Notes : GitHub peut retarder une exécution de quelques minutes. Si le collecteur échoue (erreur réseau),
+l'ancien offers.json est conservé. Changer les horaires : ligne « cron » dans .github/workflows/update.yml.
+
+Hébergement gratuit, sans nom de domaine : GitHub Pages fournit l'adresse https://VOTRE-NOM.github.io/NOM-DU-DEPOT/
+(dépôt public requis ; les offres sont de toute façon des données publiques). Alternatives gratuites : Cloudflare Pages, Netlify.
+Si GitHub désactive la planification après une longue inactivité, réactivez-la dans l'onglet Actions.
+
+Vérifier les logos : en bas du site, bouton « Tester les logos » (indique combien répondent et lesquels manquent).
+
+--- NOUVEAUTÉS ---
+Ajouter des employeurs : éditez employeurs.json, une entrée par entreprise :
+  ["Nom", "domaine.com", "Structure", "workday", "tenant|wd3|site"]   (plateformes : workday, greenhouse, lever, smart)
+Alertes (facultatif) : réglez les critères dans alertes.json (types, domaines, villes, mots) puis, dans le dépôt,
+  Settings > Secrets and variables > Actions, ajoutez :
+  Telegram : TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID (bot créé avec @BotFather)
+  E-mail   : SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO
+Installation sur téléphone : ouvrez le site puis « Ajouter à l'écran d'accueil » (icône et mode hors connexion inclus).
