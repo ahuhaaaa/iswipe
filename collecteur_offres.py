@@ -42,6 +42,7 @@ COMPANIES = [
 ]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+TRUNC = set()  # employeurs Workday dont la liste est trop longue pour être lue en entier
 _x = os.path.join(HERE, "employeurs.json")  # employeurs supplémentaires : [["Nom","domaine.com","Structure","workday","tenant|wd3|site"], ...]
 if os.path.exists(_x): COMPANIES += [tuple(e) for e in json.load(open(_x, encoding="utf-8"))]
 
@@ -87,6 +88,8 @@ def workday(spec):
             posted = today - dt.timedelta(days=int(n.group(1))) if n else today
             yield dict(title=j["title"], url=f"{base}/en-US/{site}{j['externalPath']}", loc=j.get("locationsText", ""),
                        posted=posted.isoformat(), detail=f"{base}/wday/cxs/{t}/{site}{j['externalPath']}")
+    else:
+        TRUNC.add(spec)
 
 FETCH = dict(greenhouse=greenhouse, lever=lever, smart=smart, workday=workday)
 
@@ -194,7 +197,7 @@ def logo(domain):
 
 def main(out="offers.json", prev=None):
     prev = prev or out
-    groups, logos = {}, {}
+    groups, logos, covered = {}, {}, []
     for name, dom, struct, ats, ident in COMPANIES:
         n = 0
         try:
@@ -215,13 +218,15 @@ def main(out="offers.json", prev=None):
                 n += 1
         except Exception as e:
             print(f"! {name} ({ats}) : {e}", file=sys.stderr)
+        else:
+            if ident not in TRUNC: covered.append(name)  # lecture complète : une offre absente peut être déclarée clôturée
         if n: logos[name] = logo(dom)
         print(f"{name}: {n} offre(s)")
     offers = sorted(groups.values(), key=lambda o: o["po"], reverse=True)
     try: old = {o["id"] for o in json.load(open(prev, encoding="utf-8"))["offers"]}
     except Exception: old = None
     if old is not None: notify([o for o in offers if o["id"] not in old])
-    json.dump(dict(generated=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), offers=offers, logos=logos, doms={c[0]: c[1] for c in COMPANIES}), open(out, "w", encoding="utf-8"), ensure_ascii=False)
+    json.dump(dict(generated=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), offers=offers, logos=logos, covered=covered, doms={c[0]: c[1] for c in COMPANIES}), open(out, "w", encoding="utf-8"), ensure_ascii=False)
     print(f"\n{len(offers)} offres écrites dans {out}")
 
 if __name__ == "__main__":

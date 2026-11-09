@@ -85,6 +85,9 @@ h3{font:800 18px "Bricolage Grotesque",sans-serif;margin:0 0 10px}
 dialog{border:1px solid var(--line);border-radius:18px;background:var(--sf);color:var(--ink);max-width:460px;width:92vw;padding:18px}
 dialog .chip input{margin-right:4px}hr{border:0;border-top:1px solid var(--line);margin:14px 0}#psl .chip span{cursor:pointer}
 .cnt{color:var(--mut);font-size:13px;margin:-6px 0 12px}.cnt b{color:var(--ink)}
+.clr{border:0;background:none;color:var(--acc);font:600 13px inherit;font-family:inherit;cursor:pointer;padding:5px 2px;text-decoration:underline}
+.ghost{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--ink);font:500 13px inherit;font-family:inherit;padding:5px 4px;cursor:pointer;opacity:.75}.ghost:hover{opacity:1;text-decoration:underline}
+.ghost svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .note{background:var(--accbg);color:var(--ink);border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:12px}
 footer{color:var(--mut);font-size:12px;text-align:center;margin-top:24px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -120,7 +123,7 @@ ul{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));align-items:start}.
 <div class="bar" id="bar">
 <select id="fam" aria-label="Domaine"></select><select id="sd" aria-label="Date de début"></select><select id="du" aria-label="Durée"><option value="">Toutes les durées</option><option value="a">3 mois ou moins</option><option value="b">4 à 6 mois</option><option value="c">Plus de 6 mois</option><option value="n">Durée non précisée</option></select>
 <select id="so" aria-label="Trier par"><option value="po">Plus récentes</option><option value="m">Pertinence (mon profil)</option><option value="st">Début le plus proche</option><option value="d">Durée la plus courte</option><option value="dd">Durée la plus longue</option><option value="c">Entreprise A–Z</option></select>
-<input type="search" id="q" placeholder="Rechercher" aria-label="Rechercher"><select id="vi" aria-label="Ville"></select><span id="psl" style="display:contents"></span><button class="chip" id="psv">＋ Enregistrer ce filtre</button>
+<input type="search" id="q" placeholder="Rechercher" aria-label="Rechercher"><select id="vi" aria-label="Ville"></select><span id="psl" style="display:contents"></span><button class="clr" id="clr" hidden>Effacer les filtres</button><button class="ghost" id="psv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Enregistrer ce filtre</button>
 </div>
 <p class="cnt" id="cnt" role="status"></p>
 <div id="v-deck">
@@ -146,7 +149,7 @@ const DEMO=[{"id":"17c3dfe509","t":"Stage","p":"Valuation Intern","c":"PAI Partn
 const DOMS={"PAI Partners":"paipartners.com","Crédit Agricole CIB":"ca-cib.com","Amundi":"amundi.com","Citi":"citigroup.com","KKR":"kkr.com","Point72":"point72.com","Squarepoint Capital":"squarepoint-capital.com","Qube Research & Technologies":"qube-rt.com","Lincoln International":"lincolninternational.com","Deutsche Bank":"db.com","ING":"ing.com","Air Liquide":"airliquide.com","Chanel":"chanel.com","Ardian":"ardian.com","Houlihan Lokey":"hl.com","Wells Fargo":"wellsfargo.com","MUFG":"mufg.jp","Rothschild & Co":"rothschildandco.com","Forvis Mazars":"forvismazars.com","PwC":"pwc.fr","Deloitte":"deloitte.com","Banque de France":"banque-france.fr","Euronext":"euronext.com","Natixis":"natixis.com","FDJ United":"fdj.fr","Sycomore AM":"sycomore-am.com"};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const STAT=['À postuler','Postulé','Entretien','Offre reçue','Refusé'];
-let DATA={offers:DEMO,logos:{},doms:DOMS,seed:1,generated:'2026-10-27T07:00:00Z'},BY={},S={k:{},x:{},h:[],ft:'Tous',ff:'',sd:'',du:'',vi:'',nt:{},ad:{},ed:{},ps:[],pf:null,th:'',snap:{},so:'po',q:''},busy=0,V='deck';
+let DATA={offers:DEMO,logos:{},doms:DOMS,seed:1,generated:'2026-10-27T07:00:00Z'},BY={},S={k:{},x:{},h:[],ft:'Tous',ff:'',sd:'',du:'',vi:'',nt:{},ad:{},ed:{},ps:[],pf:null,th:'',snap:{},miss:{},so:'po',q:''},busy=0,V='deck';
 try{const r=localStorage.getItem('jjs2');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem('jjs2',JSON.stringify(S))}catch(e){}};
 const nextRun=()=>{const n=new Date();for(let k=0;k<2;k++)for(const u of [7,9,11,13,15,17,19]){const t=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+k,u));if(t>n)return t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}).replace(':','h')}};
@@ -163,14 +166,14 @@ else{a=mine(S.x).length;t=`<b>${a}</b> offre${s(a)} affichée${s(a)} sur ${N} da
 $('#cnt').innerHTML=t};
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10),fd=d=>d.split('-').reverse().join('/');
-const get=i=>BY[i]||(S.snap[i]?Object.assign({},S.snap[i],{_c:1}):null);
+const get=i=>BY[i]||(S.snap[i]?Object.assign({},S.snap[i],{_c:(S.miss[i]&&S.miss[i].n>=2)?1:0}):null);
 const isNew=o=>(Date.now()-new Date(o.po))/864e5<=3;
 const IDF=/paris|défense|levallois|neuilly|boulogne|montrouge|nanterre|courbevoie|puteaux|issy|saint-denis|vélizy|massy|île-de-france/i;
 const match=o=>{const p=S.pf;if(!p)return null;let s=0;s+=!p.t.length||p.t.includes(o.t)?35:0;s+=!p.f.length||p.f.includes(o.f)?30:0;s+=!p.v||o.loc.some(l=>p.v=='IDF'?IDF.test(l[0]):l[0]==p.v)?20:0;
 if(!p.s)s+=15;else if(o.st){const a=o.st.split('-'),b=p.s.split('-'),m=Math.abs((+a[0]-+b[0])*12+(+a[1]-+b[1]));s+=m==0?15:m==1?8:0}else s+=7;return s};
 const ex=o=>[isNew(o)&&'<span class="pill nw">Nouveau</span>',o.g&&`<span class="pill">${esc(o.g)}</span>`,o.tt&&'<span class="pill">Télétravail</span>',match(o)!=null&&`<span class="pill">Correspondance ${match(o)} %</span>`].filter(Boolean).join('');
 const kx=o=>`<div class="kx">${S.ad[o.id]?`<small>Postulé le ${fd(S.ad[o.id])}</small>`:''}${S.k[o.id]=='Entretien'?`<label><small>Entretien le</small> <input type="datetime-local" data-ed="${o.id}" value="${S.ed[o.id]||''}"></label>`:''}<textarea data-nt="${o.id}" rows="2" placeholder="Notes : contact, CV utilisé…" aria-label="Notes">${esc(S.nt[o.id])}</textarea></div>`;
-const pills=o=>`<div class="pills">${o._c?'<span class="pill cl">Clôturée</span>':''}${o.stl?`<span class="pill">Début ${o.stl}</span>`:''}${o.dl?`<span class="pill">${o.dl}</span>`:''}${ex(o)}</div>`;
+const pills=o=>`<div class="pills">${o._c?'<span class="pill cl">Possiblement clôturée</span>':''}${o.stl?`<span class="pill">Début ${o.stl}</span>`:''}${o.dl?`<span class="pill">${o.dl}</span>`:''}${ex(o)}</div>`;
 const facts=o=>(o.stl||o.dl)?`<div class="facts">${o.stl?`<div><small>Début</small><b>${o.stl}</b></div>`:''}${o.dl?`<div><small>Durée</small><b>${o.dl}</b></div>`:''}</div>`:'';
 const uc=o=>{const m=new Map();o.loc.forEach(x=>{if(!m.has(x[0]))m.set(x[0],x[1])});return[...m]};
 const cities=o=>{const u=uc(o).map(x=>x[0]);return u.length>3?u.slice(0,3).join(', ')+` +${u.length-3}`:u.join(', ')};
@@ -207,7 +210,7 @@ $('#pg').style.width=(K.length?ap.length/K.length*100:0)+'%';
 $('#dl').innerHTML=srt(td.map(get)).map(o=>`<li>${head(o)}<div class="acts">${links(o)}<button class="sm" data-ap="${o.id}">J’ai postulé</button></div></li>`).join('')||'<div class="empty">Rien à postuler pour l’instant. Gardez des offres depuis l’onglet Découvrir.</div>';
 $('#rl').innerHTML=K.filter(i=>S.k[i]=='Postulé'&&S.ad[i]&&(Date.now()-new Date(S.ad[i]))/864e5>=7).map(get).map(o=>`<li>${head(o)}<div class="acts"><small>Postulé le ${fd(S.ad[o.id])}</small>${links(o)}<button class="sm" data-rl="${o.id}">Relancé</button></div></li>`).join('')||'<div class="empty">Aucune relance à faire.</div>';
 $('#psl').innerHTML=S.ps.map((p,i)=>`<span class="chip"><span data-pa="${i}">${esc(p.n)}</span> <span data-pd="${i}" aria-label="Supprimer">×</span></span>`).join('');
-cnt();upd()}
+$('#clr').hidden=!(S.ft!='Tous'||S.ff||S.sd||S.du||S.vi||S.q);cnt();upd()}
 function act(dir){const el=$('#deck .card.top');if(!el||busy)return;busy=1;$('#deck').classList.remove('drag');
 $$('#deck .card:not(.top)').forEach(c=>c.style.transition=`transform .42s ${EASE}`);stack(1);
 el.dataset.dir=dir>0?'k':'p';el.style.setProperty('--r',1);el.style.transition=`transform .42s ${EASE},opacity .42s ${EASE}`;
@@ -216,7 +219,7 @@ setTimeout(()=>{const id=el.dataset.id;if(dir>0){S.k[id]='À postuler';S.snap[id
 function undo(){const id=S.h.pop();if(id==null)return;delete S.k[id];delete S.x[id];save();render()}
 function show(v){V=v;$('#cnt').hidden=v=='dash';document.querySelector('.w').classList.toggle('dash',v=='dash');['deck','keep','pass','dash'].forEach(n=>$('#v-'+n).hidden=n!=v);$('#bar').hidden=v=='dash';$$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v==v));cnt()}
 function setData(j,persist){DATA=j;BY={};j.offers.forEach(o=>BY[o.id]=o);
-const f=$('#fam');f.innerHTML='<option value="">Tous les domaines</option>'+[...new Set(j.offers.map(o=>o.f))].sort().map(x=>`<option>${x}</option>`).join('');f.value=S.ff;const sd=$('#sd'),mo={};j.offers.forEach(o=>{if(o.st)mo[o.st]=o.stl});sd.innerHTML='<option value="">Toutes les dates de début</option>'+Object.keys(mo).sort().map(k=>`<option value="${k}">Début ${mo[k]}</option>`).join('')+'<option value="-">Début non précisé</option>';sd.value=S.sd;const vi=$('#vi'),cv=[...new Set(j.offers.flatMap(o=>o.loc.map(l=>l[0])))].sort();vi.innerHTML='<option value="">Toutes les villes</option><option value="IDF">Île-de-France</option>'+cv.map(c=>`<option>${esc(c)}</option>`).join('');vi.value=S.vi;Object.keys(S.k).forEach(i=>{if(BY[i])S.snap[i]=BY[i]});
+const f=$('#fam');f.innerHTML='<option value="">Tous les domaines</option>'+[...new Set(j.offers.map(o=>o.f))].sort().map(x=>`<option>${x}</option>`).join('');f.value=S.ff;const sd=$('#sd'),mo={};j.offers.forEach(o=>{if(o.st)mo[o.st]=o.stl});sd.innerHTML='<option value="">Toutes les dates de début</option>'+Object.keys(mo).sort().map(k=>`<option value="${k}">Début ${mo[k]}</option>`).join('')+'<option value="-">Début non précisé</option>';sd.value=S.sd;const vi=$('#vi'),cv=[...new Set(j.offers.flatMap(o=>o.loc.map(l=>l[0])))].sort();vi.innerHTML='<option value="">Toutes les villes</option><option value="IDF">Île-de-France</option>'+cv.map(c=>`<option>${esc(c)}</option>`).join('');vi.value=S.vi;Object.keys(S.k).forEach(i=>{if(BY[i]){S.snap[i]=BY[i];delete S.miss[i]}else if(S.snap[i]&&(j.covered||[]).includes(S.snap[i].c)){const m=S.miss[i]||{n:0,g:''};if(m.g!=j.generated){m.n++;m.g=j.generated}S.miss[i]=m}});save();
 
 if(persist||j.generated){try{localStorage.setItem('jjs2d',JSON.stringify(j))}catch(e){}}
 render()}
@@ -263,6 +266,7 @@ $('#pfb').onclick=openPf;$('#th').onclick=()=>{S.th=S.th==''?'light':S.th=='ligh
 $('#vi').onchange=e=>{S.vi=e.target.value;save();render()};
 $('#psv').onclick=()=>{const n=prompt('Nom de ce filtre ?');if(n){S.ps.push({n,ft:S.ft,ff:S.ff,sd:S.sd,du:S.du,vi:S.vi,q:S.q,so:S.so});save();render()}};
 document.addEventListener('change',e=>{const d=e.target.dataset;if(d.nt)S.nt[d.nt]=e.target.value;else if(d.ed)S.ed[d.ed]=e.target.value;else return;save()});
+$('#clr').onclick=()=>{Object.assign(S,{ft:'Tous',ff:'',sd:'',du:'',vi:'',q:''});save();sync();render()};
 thm();
 show('deck');
 try{const r=localStorage.getItem('jjs2d');if(r)DATA=JSON.parse(r)}catch(e){}
